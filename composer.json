@@ -9,7 +9,7 @@
     },
     "require": {
         "php": ">=7.4",
-        "stellarwp/licensing-api-client": "^0.2",
+        "stellarwp/licensing-api-client": "^0.1",
         "guzzlehttp/guzzle": "^7.10",
         "guzzlehttp/psr7": "^2.9"
     },
@@ -20,7 +20,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "0.2.x-dev"
+            "dev-main": "0.1.x-dev"
         }
     }
 }
