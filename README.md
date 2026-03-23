@@ -50,10 +50,10 @@ use GuzzleHttp\Psr7\HttpFactory;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
-use StellarWP\LicensingApiClient\Api;
-use StellarWP\LicensingApiClient\Config;
-use StellarWP\LicensingApiClient\Contracts\LicensingClientInterface;
-use StellarWP\LicensingApiClient\Http\RequestExecutor;
+use LiquidWeb\LicensingApiClient\Api;
+use LiquidWeb\LicensingApiClient\Config;
+use LiquidWeb\LicensingApiClient\Contracts\LicensingClientInterface;
+use LiquidWeb\LicensingApiClient\Http\RequestExecutor;
 use lucatume\DI52\ServiceProvider;
 
 final class LicensingApiProvider extends ServiceProvider
@@ -123,8 +123,8 @@ For a public or unauthenticated client without a Container:
 <?php declare(strict_types=1);
 
 use GuzzleHttp\Client;
-use StellarWP\LicensingApiClient\Config;
-use StellarWP\LicensingApiClientGuzzle\GuzzleApiFactory;
+use LiquidWeb\LicensingApiClient\Config;
+use LiquidWeb\LicensingApiClientGuzzle\GuzzleApiFactory;
 
 $api = (new GuzzleApiFactory(
     new Client()
@@ -141,8 +141,8 @@ For a trusted source with a configured token:
 <?php declare(strict_types=1);
 
 use GuzzleHttp\Client;
-use StellarWP\LicensingApiClient\Config;
-use StellarWP\LicensingApiClientGuzzle\GuzzleApiFactory;
+use LiquidWeb\LicensingApiClient\Config;
+use LiquidWeb\LicensingApiClientGuzzle\GuzzleApiFactory;
 
 $api = (new GuzzleApiFactory(
     new Client()

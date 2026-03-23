@@ -1,12 +1,12 @@
 <?php declare(strict_types=1);
 
-namespace StellarWP\LicensingApiClientGuzzle;
+namespace LiquidWeb\LicensingApiClientGuzzle;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\HttpFactory;
-use StellarWP\LicensingApiClient\Api;
-use StellarWP\LicensingApiClient\ApiBuilder;
-use StellarWP\LicensingApiClient\Config;
+use LiquidWeb\LicensingApiClient\Api;
+use LiquidWeb\LicensingApiClient\ApiBuilder;
+use LiquidWeb\LicensingApiClient\Config;
 
 /**
  * Builds the core licensing API client with Guzzle transport dependencies.
