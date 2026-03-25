@@ -115,22 +115,56 @@ That lets you resolve the fully-wired core client from the container. The import
 $api = $container->get(LicensingClientInterface::class);
 ```
 
-Then you can use the resolved client normally:
+API errors are thrown as exceptions, so catch the specific cases you care about and fall back to `ApiErrorExceptionInterface` for the rest:
 
 ```php
-$catalog = $api->products()->catalog('LWSW-8H9F-5UKA-VR3B-D7SQ-BP9N');
+use LiquidWeb\LicensingApiClient\Exceptions\Contracts\ApiErrorExceptionInterface;
+use LiquidWeb\LicensingApiClient\Exceptions\NotFoundException;
+use LiquidWeb\LicensingApiClient\Exceptions\ValidationException;
 
-$validation = $api->licenses()->validate(
-	'LWSW-8H9F-5UKA-VR3B-D7SQ-BP9N',
-	['kadence', 'learndash'],
-	'customer-site.com'
-);
+try {
+	$catalog = $api->products()->catalog('LWSW-8H9F-5UKA-VR3B-D7SQ-BP9N');
 
-$trustedApi = $api->withConfiguredToken();
-$balances   = $trustedApi->credits()->balance(
-	'LWSW-8H9F-5UKA-VR3B-D7SQ-BP9N',
-	'customer-site.com'
-);
+	$validation = $api->licenses()->validate(
+		'LWSW-8H9F-5UKA-VR3B-D7SQ-BP9N',
+		['kadence', 'learndash'],
+		'customer-site.com'
+	);
+
+	$balances = $api->withConfiguredToken()->credits()->balance(
+		'LWSW-8H9F-5UKA-VR3B-D7SQ-BP9N',
+		'customer-site.com'
+	);
+} catch (NotFoundException $e) {
+	// Return the API message when the requested record does not exist.
+	return [
+		'success' => false,
+		'message' => $e->getMessage(),
+	];
+} catch (ValidationException $e) {
+	// Return the validation message and log the details for debugging.
+	$this->logger->warning('Licensing validation failed.', [
+		'message' => $e->getMessage(),
+		'code' => $e->errorCode(),
+	]);
+
+	return [
+		'success' => false,
+		'message' => $e->getMessage(),
+	];
+} catch (ApiErrorExceptionInterface $e) {
+	// Log unexpected API-declared errors and return a generic failure message.
+	$this->logger->error('Licensing API request failed.', [
+		'status' => $e->getResponse()->getStatusCode(),
+		'code' => $e->errorCode(),
+		'message' => $e->getMessage(),
+	]);
+
+	return [
+		'success' => false,
+		'message' => 'We could not complete the licensing request right now. Please try again later.',
+	];
+}
 ```
 
 For a public or unauthenticated client without a Container:

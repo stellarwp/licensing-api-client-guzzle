@@ -17,13 +17,11 @@ final class GuzzleApiFactory
 {
 	private Client $httpClient;
 
-	public function __construct(Client $httpClient)
-	{
+	public function __construct(Client $httpClient) {
 		$this->httpClient = $httpClient;
 	}
 
-	public function make(Config $config): Api
-	{
+	public function make(Config $config): Api {
 		$psr17 = new HttpFactory();
 
 		return (new ApiBuilder(
