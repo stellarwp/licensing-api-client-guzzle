@@ -135,6 +135,14 @@ try {
 		'LWSW-8H9F-5UKA-VR3B-D7SQ-BP9N',
 		'customer-site.com'
 	);
+
+	if ($catalog->products->isCapabilityValid('kadence', 'blocks')) {
+		// ...
+	}
+
+	if ($validation->products->isCapabilityValid('learndash', 'blocks')) {
+		// ...
+	}
 } catch (NotFoundException $e) {
 	// Return the API message when the requested record does not exist.
 	return [
