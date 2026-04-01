@@ -7,24 +7,7 @@ Guzzle transport and factory integration for the StellarWP Licensing API client.
 
 ## Installation
 
-Update your composer.json and add the following to your `repositories` object:
-
-```json
-{
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "git@github.com:stellarwp/licensing-api-client.git"
-        },
-        {
-            "type": "vcs",
-            "url": "git@github.com:stellarwp/licensing-api-client-guzzle.git"
-        }
-    ]
-}
-```
-
-Then, install:
+Install with composer:
 
 ```shell
 composer require stellarwp/licensing-api-client-guzzle
