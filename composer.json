@@ -9,7 +9,7 @@
     },
     "require": {
         "php": ">=7.4",
-        "stellarwp/licensing-api-client": "^0.10",
+        "stellarwp/licensing-api-client": "^0.9.4",
         "guzzlehttp/guzzle": "^7.10",
         "guzzlehttp/psr7": "^2.9"
     },
