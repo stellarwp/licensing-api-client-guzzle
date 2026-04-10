@@ -41,6 +41,7 @@ use LiquidWeb\LicensingApiClient\Http\AuthContext;
 use LiquidWeb\LicensingApiClient\Http\AuthState;
 use LiquidWeb\LicensingApiClient\Http\RequestExecutor;
 use lucatume\DI52\ServiceProvider;
+use MyApp\Support\CurrentRequestTraceId;
 
 final class LicensingApiProvider extends ServiceProvider
 {
@@ -87,12 +88,49 @@ final class LicensingApiProvider extends ServiceProvider
 			static fn(): ApiVersion => ApiVersion::default()
 		);
 
-		$this->container->singleton(LicensingClientInterface::class, Api::class);
+		$this->container->singleton(CurrentRequestTraceId::class);
+		$this->container->singleton(Api::class);
+
+		$this->container->bind(
+			LicensingClientInterface::class,
+			static fn( $c ): LicensingClientInterface => $c
+				->get(Api::class)
+				->withTraceId($c->get(CurrentRequestTraceId::class)->traceId())
+		);
 	}
 }
 ```
 
-That lets you resolve the fully-wired core client from the container. The important detail is that `AuthState` is built from `Config::configuredToken`, so your configured token only lives in one place:
+That gives you a base client as a singleton, but resolves the public `LicensingClientInterface` as a fresh clone with one stable trace ID applied for the current PHP request.
+
+That is usually what you want for tracing: if one request in your application makes multiple licensing calls, those calls should normally share the same trace ID so they can be tied together in Axiom as part of the same trace.
+
+DI52 does not provide a built-in request scope, but in a normal short-lived PHP request this singleton is still effectively request-local. If your application already has its own request or correlation ID, prefer using that value instead of generating a new one here.
+
+One simple implementation looks like this:
+
+```php
+<?php declare(strict_types=1);
+
+namespace MyApp\Support;
+
+final class CurrentRequestTraceId
+{
+	private string $traceId;
+
+	public function __construct()
+	{
+		$this->traceId = bin2hex(random_bytes(16));
+	}
+
+	public function traceId(): string
+	{
+		return $this->traceId;
+	}
+}
+```
+
+The important detail is that `AuthState` is built from `Config::configuredToken`, so your configured token only lives in one place:
 
 ```php
 $api = $container->get(LicensingClientInterface::class);
