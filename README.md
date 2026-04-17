@@ -41,7 +41,7 @@ use LiquidWeb\LicensingApiClient\Http\AuthContext;
 use LiquidWeb\LicensingApiClient\Http\AuthState;
 use LiquidWeb\LicensingApiClient\Http\RequestExecutor;
 use lucatume\DI52\ServiceProvider;
-use MyApp\Support\CurrentRequestTraceId;
+use MyApp\Support\CurrentRequestTraceParent;
 
 final class LicensingApiProvider extends ServiceProvider
 {
@@ -88,24 +88,29 @@ final class LicensingApiProvider extends ServiceProvider
 			static fn(): ApiVersion => ApiVersion::default()
 		);
 
-		$this->container->singleton(CurrentRequestTraceId::class);
+		$this->container->singleton(CurrentRequestTraceParent::class);
 		$this->container->singleton(Api::class);
 
 		$this->container->bind(
 			LicensingClientInterface::class,
 			static fn( $c ): LicensingClientInterface => $c
 				->get(Api::class)
-				->withTraceId($c->get(CurrentRequestTraceId::class)->traceId())
+				->withTraceParent($c->get(CurrentRequestTraceParent::class)->traceParent())
 		);
 	}
 }
 ```
 
-That gives you a base client as a singleton, but resolves the public `LicensingClientInterface` as a fresh clone with one stable trace ID applied for the current PHP request.
+That gives you a base client as a singleton, but resolves the public `LicensingClientInterface` as a fresh clone with one stable TraceParent applied for the current PHP request.
 
-That is usually what you want for tracing: if one request in your application makes multiple licensing calls, those calls should normally share the same trace ID so they can be tied together in Axiom as part of the same trace.
+That is usually what you want for tracing: if one request in your application makes multiple licensing calls, those calls should normally share the same TraceParent so they can be tied together in Axiom as part of the same trace.
 
-DI52 does not provide a built-in request scope, but in a normal short-lived PHP request this singleton is still effectively request-local. If your application already has its own request or correlation ID, prefer using that value instead of generating a new one here.
+> [!WARNING]
+> That only works end to end if your own application is also exporting spans to Axiom or another tracing backend. If your application is not instrumented, the licensing request can still carry the propagated `traceparent`, but Axiom will not be able to look up the true parent span because it never received it.
+>
+> If an upstream service already gives you a W3C `traceparent` header, parse that into a `TraceParent` and use `TraceContext` when you also need to preserve inbound `tracestate`. If you only have a generic correlation ID, do not try to stuff that into a `TraceParent`; keep it as separate application metadata and generate a new `TraceParent` locally for distributed tracing.
+
+DI52 does not provide a built-in request scope, but in a normal short-lived PHP request this singleton is still effectively request-local.
 
 One simple implementation looks like this:
 
@@ -114,20 +119,40 @@ One simple implementation looks like this:
 
 namespace MyApp\Support;
 
-final class CurrentRequestTraceId
+use LiquidWeb\LicensingApiClient\Tracing\TraceParent;
+
+final class CurrentRequestTraceParent
 {
-	private string $traceId;
+	private TraceParent $traceParent;
 
 	public function __construct()
 	{
-		$this->traceId = bin2hex(random_bytes(16));
+		$this->traceParent = TraceParent::generate();
 	}
 
-	public function traceId(): string
+	public function traceParent(): TraceParent
 	{
-		return $this->traceId;
+		return $this->traceParent;
 	}
 }
+```
+
+If you are continuing inbound trace headers instead, build a `TraceContext` from them and apply that to the cloned client:
+
+```php
+<?php declare(strict_types=1);
+
+use LiquidWeb\LicensingApiClient\Tracing\TraceContext;
+use LiquidWeb\LicensingApiClient\Tracing\TraceParent;
+
+$traceContext = TraceContext::fromValues(
+	TraceParent::fromString($incomingTraceparent),
+	$incomingTracestate ?? null
+);
+
+$api = $container
+	->get(Api::class)
+	->withTraceContext($traceContext);
 ```
 
 The important detail is that `AuthState` is built from `Config::configuredToken`, so your configured token only lives in one place:
